@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react'
 
 function App() {
   const [text, setText] = useState("Image Kit ")
-  const [fontSize, setFontSize] = useState(32)
+  const [fontFamily, setFontFamily] = useState("OpenSans")
+  const [fontSize, setFontSize] = useState<number | string>(32)
   const [textColor, setTextColor] = useState("#000000")
   const [bgColor, setBgColor] = useState("#ffffff")
-  const [width, setWidth] = useState(800)
-  const [height, setHeight] = useState(600)
-  const [horizontalSpacing, setHorizontalSpacing] = useState(20)
-  const [verticalSpacing, setVerticalSpacing] = useState(20)
-  const [rotationAngle, setRotationAngle] = useState(15)
+  const [width, setWidth] = useState<number | string>(800)
+  const [height, setHeight] = useState<number | string>(600)
+  const [horizontalSpacing, setHorizontalSpacing] = useState<number | string>(20)
+  const [verticalSpacing, setVerticalSpacing] = useState<number | string>(20)
+  const [rotationAngle, setRotationAngle] = useState<number | string>(15)
 
   const [imageSrc, setImageSrc] = useState<string | null>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -30,17 +31,25 @@ function App() {
   useEffect(() => {
     if (!wasmModule) return
 
+    const parsedFontSize = Number(fontSize) || 32;
+    const parsedWidth = Number(width) || 800;
+    const parsedHeight = Number(height) || 600;
+    const parsedHSpacing = Number(horizontalSpacing) || 0;
+    const parsedVSpacing = Number(verticalSpacing) || 0;
+    const parsedRotation = Number(rotationAngle) || 0;
+
     try {
       const buffer = wasmModule.generate_text_pattern(
         text,
-        fontSize,
+        fontFamily,
+        parsedFontSize,
         textColor,
         bgColor,
-        width,
-        height,
-        horizontalSpacing,
-        verticalSpacing,
-        rotationAngle
+        parsedWidth,
+        parsedHeight,
+        parsedHSpacing,
+        parsedVSpacing,
+        parsedRotation
       )
 
       const blob = new Blob([buffer], { type: 'image/png' })
@@ -53,7 +62,9 @@ function App() {
     } catch (e) {
       console.error(e)
     }
-  }, [text, fontSize, textColor, bgColor, width, height, horizontalSpacing, verticalSpacing, rotationAngle, wasmModule])
+  }, [text, fontFamily, fontSize, textColor, bgColor, width, height, horizontalSpacing, verticalSpacing, rotationAngle, wasmModule])
+
+  const fonts = ["OpenSans", "Roboto", "Lora", "Pacifico"];
 
   return (
     <div className="min-h-screen bg-gray-100 flex p-6 gap-6 font-sans">
@@ -76,11 +87,32 @@ function App() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Font Size: {fontSize}px</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Font Family</label>
+                <select
+                  value={fontFamily}
+                  onChange={(e) => setFontFamily(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  {fonts.map(font => (
+                    <option key={font} value={font}>{font}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-sm font-medium text-gray-700">Font Size</label>
+                  <input
+                    type="number"
+                    value={fontSize}
+                    onChange={(e) => setFontSize(e.target.value)}
+                    className="w-16 px-1 py-0.5 text-right text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
                 <input
                   type="range"
                   min="8" max="120"
-                  value={fontSize}
+                  value={Number(fontSize) || 32}
                   onChange={(e) => setFontSize(Number(e.target.value))}
                   className="w-full"
                 />
@@ -91,7 +123,7 @@ function App() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Text Color</label>
                   <input
                     type="color"
-                    value={textColor}
+                    value={textColor !== "transparent" ? textColor.slice(0, 7) : "#000000"}
                     onChange={(e) => setTextColor(e.target.value)}
                     className="w-full h-10 p-1 border border-gray-300 rounded-md cursor-pointer"
                   />
@@ -100,10 +132,20 @@ function App() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Background</label>
                   <input
                     type="color"
-                    value={bgColor}
+                    value={bgColor !== "transparent" ? bgColor.slice(0, 7) : "#ffffff"}
                     onChange={(e) => setBgColor(e.target.value)}
                     className="w-full h-10 p-1 border border-gray-300 rounded-md cursor-pointer"
                   />
+                  <div className="mt-1 flex items-center">
+                    <input
+                      type="checkbox"
+                      id="bg-transparent"
+                      checked={bgColor === "transparent"}
+                      onChange={(e) => setBgColor(e.target.checked ? "transparent" : "#ffffff")}
+                      className="mr-2"
+                    />
+                    <label htmlFor="bg-transparent" className="text-xs text-gray-600">Transparent</label>
+                  </div>
                 </div>
               </div>
             </div>
@@ -119,7 +161,7 @@ function App() {
                   <input
                     type="number"
                     value={width}
-                    onChange={(e) => setWidth(Number(e.target.value))}
+                    onChange={(e) => setWidth(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -128,40 +170,64 @@ function App() {
                   <input
                     type="number"
                     value={height}
-                    onChange={(e) => setHeight(Number(e.target.value))}
+                    onChange={(e) => setHeight(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Rotation Angle: {rotationAngle}°</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-sm font-medium text-gray-700">Rotation Angle</label>
+                  <input
+                    type="number"
+                    value={rotationAngle}
+                    onChange={(e) => setRotationAngle(e.target.value)}
+                    className="w-16 px-1 py-0.5 text-right text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
                 <input
                   type="range"
                   min="-180" max="180"
-                  value={rotationAngle}
+                  value={Number(rotationAngle) || 0}
                   onChange={(e) => setRotationAngle(Number(e.target.value))}
                   className="w-full"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Horizontal Spacing: {horizontalSpacing}px</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-sm font-medium text-gray-700">Horizontal Spacing</label>
+                  <input
+                    type="number"
+                    value={horizontalSpacing}
+                    onChange={(e) => setHorizontalSpacing(e.target.value)}
+                    className="w-16 px-1 py-0.5 text-right text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
                 <input
                   type="range"
                   min="0" max="100"
-                  value={horizontalSpacing}
+                  value={Number(horizontalSpacing) || 0}
                   onChange={(e) => setHorizontalSpacing(Number(e.target.value))}
                   className="w-full"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Vertical Spacing: {verticalSpacing}px</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-sm font-medium text-gray-700">Vertical Spacing</label>
+                  <input
+                    type="number"
+                    value={verticalSpacing}
+                    onChange={(e) => setVerticalSpacing(e.target.value)}
+                    className="w-16 px-1 py-0.5 text-right text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
                 <input
                   type="range"
                   min="0" max="100"
-                  value={verticalSpacing}
+                  value={Number(verticalSpacing) || 0}
                   onChange={(e) => setVerticalSpacing(Number(e.target.value))}
                   className="w-full"
                 />
@@ -194,16 +260,16 @@ function App() {
           </div>
         </div>
 
-        <div className="flex-1 bg-gray-50 rounded border-2 border-dashed border-gray-200 flex items-center justify-center overflow-auto p-4">
+        <div className="flex-1 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+CjxyZWN0IHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgZmlsbD0iI2ZmZiIgLz4KPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjZjBmMGYwIiAvPgo8cmVjdCB4PSIxMCIgeT0iMTAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iI2YwZjBmMCIgLz4KPC9zdmc+')] rounded border-2 border-dashed border-gray-200 flex items-center justify-center overflow-auto p-4">
           {imageSrc ? (
             <img
               src={imageSrc}
               alt="Generated Pattern"
-              className="max-w-full shadow-md bg-white"
+              className="max-w-full shadow-md"
               style={{ maxHeight: '100%', objectFit: 'contain' }}
             />
           ) : (
-            <div className="text-gray-400">Loading generator...</div>
+            <div className="text-gray-400 bg-white p-4 rounded">Loading generator...</div>
           )}
         </div>
       </div>
